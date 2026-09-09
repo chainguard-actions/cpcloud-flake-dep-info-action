@@ -1,0 +1,106 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
+
+      - name: setup nodejs
+        uses: actions/setup-node@7c12f8017d5436eb855f1ed4399f037a36fbd9e8 # v2
+        with:
+          node-version: 14
+
+      - run: npm install
+      - run: npm run build
+      - run: npm run format-check
+      - run: npm run lint
+      - run: npm run package
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        input:
+          - name: nixpkgs
+            repo: nixpkgs
+            owner: NixOS
+
+          - name: pre-commit-hooks
+            repo: pre-commit-hooks.nix
+            owner: cachix
+    steps:
+      - name: checkout
+        uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
+
+      - name: test
+        uses: ./
+        id: test
+        with:
+          input: ${{ matrix.input.name }}
+
+      - name: check owner
+        env:
+          ACTUAL_OWNER: ${{ steps.test.outputs.owner }}
+          EXPECTED_OWNER: ${{ matrix.input.owner }}
+        run: if [ "$ACTUAL_OWNER" != "$EXPECTED_OWNER" ]; then exit 1; fi
+
+      - name: check repo
+        env:
+          ACTUAL_REPO: ${{ steps.test.outputs.repo }}
+          EXPECTED_REPO: ${{ matrix.input.repo }}
+        run: if [ "$ACTUAL_REPO" != "$EXPECTED_REPO" ]; then exit 1; fi
+
+      - name: check rev
+        env:
+          REV: ${{ steps.test.outputs.rev }}
+        run: if [ -z "$REV" ]; then exit 1; fi
+
+      - name: check short-rev
+        env:
+          SHORT_REV: ${{ steps.test.outputs.short-rev }}
+        run: if [ -z "$SHORT_REV" ]; then exit 1; fi
+  release:
+    runs-on: ubuntu-latest
+    concurrency: release
+    needs:
+      - build
+      - test
+    steps:
+      - name: checkout
+        uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: setup nodejs
+        uses: actions/setup-node@7c12f8017d5436eb855f1ed4399f037a36fbd9e8 # v2
+        with:
+          node-version: 14
+
+      - name: install ci dependencies
+        run: npm ci
+
+      - name: install runtime dependencies
+        run: npm install
+
+      - name: build
+        run: npm run build
+
+      - name: package assets
+        run: npm run package
+
+      - name: release
+        run: npx semantic-release
+        env:
+          GIT_CREDENTIALS: ${{ secrets.FLAKE_DEP_INFO_ACTION_SEMREL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

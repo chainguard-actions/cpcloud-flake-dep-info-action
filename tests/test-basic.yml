@@ -1,0 +1,58 @@
+name: Test basic usage - nixpkgs input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          input: nixpkgs
+          lockfile: ${{ github.workspace }}/tests/fixtures/flake.lock
+
+      - name: Assert owner output
+        env:
+          ACTUAL: ${{ steps.action.outputs.owner }}
+        run: |
+          echo "owner: $ACTUAL"
+          if [ "$ACTUAL" != "NixOS" ]; then
+            echo "FAIL: expected owner 'NixOS', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert repo output
+        env:
+          ACTUAL: ${{ steps.action.outputs.repo }}
+        run: |
+          echo "repo: $ACTUAL"
+          if [ "$ACTUAL" != "nixpkgs" ]; then
+            echo "FAIL: expected repo 'nixpkgs', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert rev output
+        env:
+          ACTUAL: ${{ steps.action.outputs.rev }}
+        run: |
+          echo "rev: $ACTUAL"
+          if [ "$ACTUAL" != "0d5b4445e33b1cd666b107bbdf5920884bbaeb1a" ]; then
+            echo "FAIL: expected full rev '0d5b4445e33b1cd666b107bbdf5920884bbaeb1a', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert short-rev output (default 8 chars)
+        env:
+          ACTUAL: ${{ steps.action.outputs.short-rev }}
+        run: |
+          echo "short-rev: $ACTUAL"
+          if [ "$ACTUAL" != "0d5b4445" ]; then
+            echo "FAIL: expected short-rev '0d5b4445', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"

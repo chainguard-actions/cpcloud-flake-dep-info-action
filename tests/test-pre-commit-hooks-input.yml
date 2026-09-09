@@ -1,0 +1,58 @@
+name: Test pre-commit-hooks input lookup
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          input: pre-commit-hooks
+          lockfile: ${{ github.workspace }}/tests/fixtures/flake.lock
+
+      - name: Assert owner output
+        env:
+          ACTUAL: ${{ steps.action.outputs.owner }}
+        run: |
+          echo "owner: $ACTUAL"
+          if [ "$ACTUAL" != "cachix" ]; then
+            echo "FAIL: expected owner 'cachix', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert repo output
+        env:
+          ACTUAL: ${{ steps.action.outputs.repo }}
+        run: |
+          echo "repo: $ACTUAL"
+          if [ "$ACTUAL" != "pre-commit-hooks.nix" ]; then
+            echo "FAIL: expected repo 'pre-commit-hooks.nix', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert rev output
+        env:
+          ACTUAL: ${{ steps.action.outputs.rev }}
+        run: |
+          echo "rev: $ACTUAL"
+          if [ "$ACTUAL" != "06fa80325b6fe3b28d136071dd0ce55d4817e9fd" ]; then
+            echo "FAIL: expected rev '06fa80325b6fe3b28d136071dd0ce55d4817e9fd', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert short-rev output (default 8 chars)
+        env:
+          ACTUAL: ${{ steps.action.outputs.short-rev }}
+        run: |
+          echo "short-rev: $ACTUAL"
+          if [ "$ACTUAL" != "06fa8032" ]; then
+            echo "FAIL: expected short-rev '06fa8032', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"

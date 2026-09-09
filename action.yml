@@ -1,0 +1,28 @@
+name: "flake-dep-info-action"
+description: "Get information about flake dependencies"
+author: "Phillip Cloud"
+inputs:
+  input:
+    required: true
+    description: "The flake input whose data you want to access"
+  lockfile:
+    required: false
+    description: "The path to the flake lock file containing locked dependencies"
+    default: "flake.lock"
+  short-rev-length:
+    required: false
+    description: "The length of the short-rev output"
+    default: "8"
+outputs:
+  owner:
+    description: "The owner of the repository"
+  repo:
+    description: "The repository"
+  rev:
+    description: "Git revision of the dependency"
+  short-rev:
+    description: "Short git revision"
+runs:
+  pre: chainguard-phonehome.js
+  using: "node12"
+  main: "dist/index.js"

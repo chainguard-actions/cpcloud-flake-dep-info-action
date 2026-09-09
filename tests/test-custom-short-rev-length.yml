@@ -1,0 +1,44 @@
+name: Test custom short-rev-length
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action-12
+        uses: .
+        with:
+          input: nixpkgs
+          lockfile: ${{ github.workspace }}/tests/fixtures/flake.lock
+          short-rev-length: "12"
+
+      - name: Assert short-rev is 12 chars
+        env:
+          ACTUAL: ${{ steps.action-12.outputs.short-rev }}
+        run: |
+          echo "short-rev (12): $ACTUAL"
+          if [ "$ACTUAL" != "0d5b4445e33b" ]; then
+            echo "FAIL: expected '0d5b4445e33b' (12 chars), got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - id: action-4
+        uses: .
+        with:
+          input: nixpkgs
+          lockfile: ${{ github.workspace }}/tests/fixtures/flake.lock
+          short-rev-length: "4"
+
+      - name: Assert short-rev is 4 chars
+        env:
+          ACTUAL: ${{ steps.action-4.outputs.short-rev }}
+        run: |
+          echo "short-rev (4): $ACTUAL"
+          if [ "$ACTUAL" != "0d5b" ]; then
+            echo "FAIL: expected '0d5b' (4 chars), got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"

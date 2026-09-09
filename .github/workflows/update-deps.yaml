@@ -1,0 +1,76 @@
+name: Update Dependencies
+on:
+  schedule:
+    - cron: "5 */6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  flake-update:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        input:
+          - nixpkgs
+          - pre-commit-hooks
+    steps:
+      - name: Checkout
+        uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@11e5400eccd6f89582f7da71e36b86e2b0924252 # v14
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get current commit
+        uses: cpcloud/flake-dep-info-action@8334941bf125773c0e9703e6b77ed133844f618b # main
+        id: get_current_commit
+        with:
+          input: ${{ matrix.input }}
+
+      - name: Update ${{ matrix.input }}
+        env:
+          MATRIX_INPUT: ${{ matrix.input }}
+        run: nix flake lock --update-input "$MATRIX_INPUT"
+
+      - name: Get new commit
+        uses: cpcloud/flake-dep-info-action@8334941bf125773c0e9703e6b77ed133844f618b # main
+        id: get_new_commit
+        with:
+          input: ${{ matrix.input }}
+
+      - name: Get commit details for ${{ matrix.input }} changes
+        uses: cpcloud/compare-commits-action@5ed822b9b2a13075063ab399035d09c9eb450fca # v5.0.8
+        id: compare_commits
+        if: ${{ steps.get_current_commit.outputs.rev != steps.get_new_commit.outputs.rev }}
+        with:
+          owner: ${{ steps.get_new_commit.outputs.owner }}
+          repo: ${{ steps.get_new_commit.outputs.repo }}
+          basehead: ${{ steps.get_current_commit.outputs.rev }}...${{ steps.get_new_commit.outputs.rev }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          include-merge-commits: false
+
+      - name: Create a pull request to update ${{ matrix.input }}
+        if: ${{ steps.get_current_commit.outputs.rev != steps.get_new_commit.outputs.rev }}
+        id: create_pr
+        uses: peter-evans/create-pull-request@18f7dc018cc2cd597073088f7c7591b9d1c02672 # v3
+        with:
+          commit-message: "chore(deps): update ${{ matrix.input }}"
+          branch: "create-pull-request/update-${{ matrix.input }}"
+          delete-branch: true
+          author: "Phillip Ground <cpcloudbot@gmail.com>"
+          title: "chore(deps): update ${{ matrix.input }}"
+          token: ${{ secrets.GROUND_FLAKE_DEP_INFO_ACTION }}
+          body: ${{ steps.compare_commits.outputs.differences }}
+
+      - name: Set the PR to automerge
+        if: ${{ steps.create_pr.outputs.pull-request-operation == 'created' }}
+        uses: peter-evans/enable-pull-request-automerge@21d45e1c52f5d111d2019b5d33f953ed2e735c46 # v1
+        with:
+          token: ${{ secrets.GROUND_FLAKE_DEP_INFO_ACTION }}
+          pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
+          merge-method: rebase
