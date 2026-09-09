@@ -1,0 +1,57 @@
+name: Test flake-utils input from default lockfile
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Verify fixture lockfile exists
+        run: |
+          ls -la "$GITHUB_WORKSPACE/tests/fixtures/flake.lock"
+          echo "Lockfile found at: $GITHUB_WORKSPACE/tests/fixtures/flake.lock"
+      - id: action
+        uses: .
+        with:
+          input: flake-utils
+          lockfile: ${{ github.workspace }}/tests/fixtures/flake.lock
+      - name: Assert owner
+        env:
+          ACTUAL: ${{ steps.action.outputs.owner }}
+        run: |
+          echo "actual owner: $ACTUAL"
+          if [ "$ACTUAL" != "numtide" ]; then
+            echo "FAIL: expected owner 'numtide', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert repo
+        env:
+          ACTUAL: ${{ steps.action.outputs.repo }}
+        run: |
+          echo "actual repo: $ACTUAL"
+          if [ "$ACTUAL" != "flake-utils" ]; then
+            echo "FAIL: expected repo 'flake-utils', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert rev
+        env:
+          ACTUAL: ${{ steps.action.outputs.rev }}
+        run: |
+          echo "actual rev: $ACTUAL"
+          if [ "$ACTUAL" != "5aed5285a952e0b949eb3ba02c12fa4fcfef535f" ]; then
+            echo "FAIL: expected rev '5aed5285a952e0b949eb3ba02c12fa4fcfef535f', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert short-rev (default 8 chars)
+        env:
+          ACTUAL: ${{ steps.action.outputs.short-rev }}
+        run: |
+          echo "actual short-rev: $ACTUAL"
+          if [ "$ACTUAL" != "5aed5285" ]; then
+            echo "FAIL: expected short-rev '5aed5285', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"

@@ -1,0 +1,65 @@
+name: Update Dependencies
+on:
+  schedule:
+    - cron: "20 0 * * 0"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  get-flakes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.get-flakes.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3
+      - uses: cachix/install-nix-action@daddc62a2e67d1decb56e028c9fa68344b9b7c2a # v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - name: generate flake matrix
+        id: get-flakes
+        run: |
+          set -euo pipefail
+
+          flakes="$(nix flake metadata --json | jq -rcM '.locks.nodes.root.inputs | {flake: keys}')"
+          echo "matrix=$flakes" >> "$GITHUB_OUTPUT"
+  flake-update:
+    runs-on: ubuntu-latest
+    needs:
+      - get-flakes
+    permissions:
+      contents: write
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.get-flakes.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3
+      - uses: cachix/install-nix-action@daddc62a2e67d1decb56e028c9fa68344b9b7c2a # v18
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      - uses: tibdex/github-app-token@32691ba7c9e7063bd457bd8f2a5703138591fa58 # v1
+        id: generate-token
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - uses: cpcloud/flake-update-action@eea7b63ddc8fb5c546064ea6ad485a414e259a76 # v1.0.2
+        with:
+          dependency: ${{ matrix.flake }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-token: ${{ steps.generate-token.outputs.token }}
+          pull-request-author: "phillip-ground[bot] <phillip-ground[bot]@users.noreply.github.com>"
+          pull-request-labels: dependencies,autorebase:opt-in
+          automerge: true
+          delete-branch: true
