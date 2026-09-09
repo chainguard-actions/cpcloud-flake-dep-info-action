@@ -1,0 +1,26 @@
+{
+  "nodes": {
+    "root": {
+      "inputs": {
+        "mylib": "mylib"
+      }
+    },
+    "mylib": {
+      "locked": {
+        "lastModified": 1700000000,
+        "narHash": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "owner": "example-owner",
+        "repo": "example-repo",
+        "rev": "abcdef1234567890abcdef1234567890abcdef12",
+        "type": "github"
+      },
+      "original": {
+        "owner": "example-owner",
+        "repo": "example-repo",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

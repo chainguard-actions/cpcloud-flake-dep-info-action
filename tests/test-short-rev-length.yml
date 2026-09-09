@@ -1,0 +1,52 @@
+name: Test custom short-rev-length
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action-12
+        uses: .
+        with:
+          input: nixpkgs
+          lockfile: tests/fixtures/flake.lock
+          short-rev-length: "12"
+      - name: Assert short-rev is 12 chars
+        env:
+          ACTUAL: ${{ steps.action-12.outputs.short-rev }}
+        run: |
+          echo "short-rev: $ACTUAL"
+          EXPECTED="76612b17c0ce"
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "FAIL: expected short-rev '$EXPECTED', got '$ACTUAL'"
+            exit 1
+          fi
+          LEN="${#ACTUAL}"
+          if [ "$LEN" != "12" ]; then
+            echo "FAIL: expected length 12, got $LEN"
+            exit 1
+          fi
+          echo "PASS"
+      - id: action-4
+        uses: .
+        with:
+          input: nixpkgs
+          lockfile: tests/fixtures/flake.lock
+          short-rev-length: "4"
+      - name: Assert short-rev is 4 chars
+        env:
+          ACTUAL: ${{ steps.action-4.outputs.short-rev }}
+        run: |
+          echo "short-rev: $ACTUAL"
+          EXPECTED="7661"
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "FAIL: expected short-rev '$EXPECTED', got '$ACTUAL'"
+            exit 1
+          fi
+          LEN="${#ACTUAL}"
+          if [ "$LEN" != "4" ]; then
+            echo "FAIL: expected length 4, got $LEN"
+            exit 1
+          fi
+          echo "PASS"

@@ -1,0 +1,78 @@
+{
+  "name": "flake-dep-info-action",
+  "version": "2.0.10",
+  "private": true,
+  "description": "Get information about flake dependencies",
+  "main": "lib/main.js",
+  "scripts": {
+    "build": "tsc",
+    "format": "prettier --write .",
+    "format-check": "prettier --check .",
+    "lint": "eslint .",
+    "package": "ncc build --no-source-map-register --license licenses.txt --target es2019",
+    "all": "npm run build && npm run format && npm run lint && npm run package"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cpcloud/flake-dep-info-action.git"
+  },
+  "keywords": [
+    "actions",
+    "node",
+    "setup",
+    "git",
+    "github",
+    "flake",
+    "flakes",
+    "dependencies",
+    "nix"
+  ],
+  "author": "Phillip Cloud <417981+cpcloud@users.noreply.github.com>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@actions/core": "1.11.1"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "6.0.3",
+    "@semantic-release/commit-analyzer": "13.0.0",
+    "@semantic-release/git": "10.0.1",
+    "@semantic-release/release-notes-generator": "14.0.1",
+    "@types/eslint": "9.6.1",
+    "@types/node": "22.9.0",
+    "@typescript-eslint/eslint-plugin": "8.14.0",
+    "@typescript-eslint/parser": "8.14.0",
+    "@vercel/ncc": "0.38.2",
+    "eslint": "^8.0.1",
+    "eslint-plugin-github": "5.0.2",
+    "prettier": "3.3.3",
+    "semantic-release": "24.2.0",
+    "typescript": "5.6.3"
+  },
+  "release": {
+    "branches": [
+      "main"
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/changelog",
+      [
+        "@semantic-release/github",
+        {
+          "successComment": false
+        }
+      ],
+      [
+        "@semantic-release/git",
+        {
+          "assets": [
+            "dist/*",
+            "package.json",
+            "package-lock.json",
+            "CHANGELOG.md"
+          ]
+        }
+      ]
+    ]
+  }
+}

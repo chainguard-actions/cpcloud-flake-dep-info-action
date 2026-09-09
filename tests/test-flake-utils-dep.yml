@@ -1,0 +1,53 @@
+name: Test flake-utils dependency lookup
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          input: flake-utils
+          lockfile: tests/fixtures/flake.lock
+      - name: Assert owner output
+        env:
+          ACTUAL: ${{ steps.action.outputs.owner }}
+        run: |
+          echo "owner: $ACTUAL"
+          if [ "$ACTUAL" != "numtide" ]; then
+            echo "FAIL: expected owner 'numtide', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert repo output
+        env:
+          ACTUAL: ${{ steps.action.outputs.repo }}
+        run: |
+          echo "repo: $ACTUAL"
+          if [ "$ACTUAL" != "flake-utils" ]; then
+            echo "FAIL: expected repo 'flake-utils', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert rev output
+        env:
+          ACTUAL: ${{ steps.action.outputs.rev }}
+        run: |
+          echo "rev: $ACTUAL"
+          if [ "$ACTUAL" != "c1dfcf08411b08f6b8615f7d8971a2bfa81d5e8a" ]; then
+            echo "FAIL: expected rev 'c1dfcf08411b08f6b8615f7d8971a2bfa81d5e8a', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert short-rev output (default 8 chars)
+        env:
+          ACTUAL: ${{ steps.action.outputs.short-rev }}
+        run: |
+          echo "short-rev: $ACTUAL"
+          if [ "$ACTUAL" != "c1dfcf08" ]; then
+            echo "FAIL: expected short-rev 'c1dfcf08', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"

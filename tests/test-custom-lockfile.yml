@@ -1,0 +1,53 @@
+name: Test custom lockfile path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          input: mylib
+          lockfile: tests/fixtures/custom.lock
+      - name: Assert owner output
+        env:
+          ACTUAL: ${{ steps.action.outputs.owner }}
+        run: |
+          echo "owner: $ACTUAL"
+          if [ "$ACTUAL" != "example-owner" ]; then
+            echo "FAIL: expected owner 'example-owner', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert repo output
+        env:
+          ACTUAL: ${{ steps.action.outputs.repo }}
+        run: |
+          echo "repo: $ACTUAL"
+          if [ "$ACTUAL" != "example-repo" ]; then
+            echo "FAIL: expected repo 'example-repo', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert rev output
+        env:
+          ACTUAL: ${{ steps.action.outputs.rev }}
+        run: |
+          echo "rev: $ACTUAL"
+          if [ "$ACTUAL" != "abcdef1234567890abcdef1234567890abcdef12" ]; then
+            echo "FAIL: expected rev 'abcdef1234567890abcdef1234567890abcdef12', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert short-rev output (default 8 chars)
+        env:
+          ACTUAL: ${{ steps.action.outputs.short-rev }}
+        run: |
+          echo "short-rev: $ACTUAL"
+          if [ "$ACTUAL" != "abcdef12" ]; then
+            echo "FAIL: expected short-rev 'abcdef12', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
