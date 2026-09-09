@@ -1,0 +1,65 @@
+name: Test custom short-rev-length
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          input: flake-utils
+          lockfile: ${{ github.workspace }}/tests/fixtures/flake.lock
+          short-rev-length: "12"
+
+      - name: Assert owner output
+        env:
+          ACTUAL: ${{ steps.action.outputs.owner }}
+        run: |
+          echo "actual owner: $ACTUAL"
+          if [ "$ACTUAL" != "numtide" ]; then
+            echo "FAIL: expected owner 'numtide', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert repo output
+        env:
+          ACTUAL: ${{ steps.action.outputs.repo }}
+        run: |
+          echo "actual repo: $ACTUAL"
+          if [ "$ACTUAL" != "flake-utils" ]; then
+            echo "FAIL: expected repo 'flake-utils', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert rev output
+        env:
+          ACTUAL: ${{ steps.action.outputs.rev }}
+        run: |
+          echo "actual rev: $ACTUAL"
+          if [ "$ACTUAL" != "f9e7cf818399d17d347f847525c5a5a8032e4e44" ]; then
+            echo "FAIL: expected full rev 'f9e7cf818399d17d347f847525c5a5a8032e4e44', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert short-rev is 12 characters
+        env:
+          ACTUAL: ${{ steps.action.outputs.short-rev }}
+        run: |
+          echo "actual short-rev: $ACTUAL"
+          LEN="${#ACTUAL}"
+          echo "length: $LEN"
+          if [ "$LEN" != "12" ]; then
+            echo "FAIL: expected short-rev length 12, got $LEN"
+            exit 1
+          fi
+          if [ "$ACTUAL" != "f9e7cf818399" ]; then
+            echo "FAIL: expected short-rev 'f9e7cf818399', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"

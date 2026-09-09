@@ -1,0 +1,32 @@
+name: Test missing input error handling
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Request a dependency that does not exist in the lockfile.
+      # The action should fail with an error (setFailed), not crash silently.
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          input: nonexistent-dep
+          lockfile: ${{ github.workspace }}/tests/fixtures/flake.lock
+
+      - name: Assert action failed gracefully for missing input
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action correctly failed for a missing dependency"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "FAIL: action should have failed for a nonexistent dependency"
+            exit 1
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

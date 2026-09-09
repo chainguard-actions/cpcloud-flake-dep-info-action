@@ -1,0 +1,62 @@
+name: Test default lockfile path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # The action defaults to 'flake.lock' in the current working directory.
+      # The action repo itself contains a flake.lock with known entries.
+      - id: action
+        uses: .
+        with:
+          input: nixpkgs
+          # lockfile defaults to "flake.lock" — the action's own flake.lock is at the workspace root
+
+      - name: Assert owner output is non-empty
+        env:
+          ACTUAL: ${{ steps.action.outputs.owner }}
+        run: |
+          echo "actual owner: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected non-empty owner"
+            exit 1
+          fi
+          echo "PASS: owner=$ACTUAL"
+
+      - name: Assert repo output is non-empty
+        env:
+          ACTUAL: ${{ steps.action.outputs.repo }}
+        run: |
+          echo "actual repo: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected non-empty repo"
+            exit 1
+          fi
+          echo "PASS: repo=$ACTUAL"
+
+      - name: Assert rev output is non-empty and 40 chars
+        env:
+          ACTUAL: ${{ steps.action.outputs.rev }}
+        run: |
+          echo "actual rev: $ACTUAL"
+          LEN="${#ACTUAL}"
+          if [ "$LEN" != "40" ]; then
+            echo "FAIL: expected rev length 40, got $LEN"
+            exit 1
+          fi
+          echo "PASS: rev=$ACTUAL"
+
+      - name: Assert short-rev is 8 chars (default)
+        env:
+          ACTUAL: ${{ steps.action.outputs.short-rev }}
+        run: |
+          echo "actual short-rev: $ACTUAL"
+          LEN="${#ACTUAL}"
+          if [ "$LEN" != "8" ]; then
+            echo "FAIL: expected short-rev length 8, got $LEN"
+            exit 1
+          fi
+          echo "PASS: short-rev=$ACTUAL"

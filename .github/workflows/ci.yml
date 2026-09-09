@@ -1,0 +1,105 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
+        with:
+          node-version: 16
+
+      - run: npm install
+      - run: npm run build
+      - run: npm run format-check
+      - run: npm run lint
+      - run: npm run package
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        input:
+          - name: nixpkgs
+            repo: nixpkgs
+            owner: NixOS
+
+          - name: pre-commit-hooks
+            repo: pre-commit-hooks.nix
+            owner: cachix
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: test
+        uses: ./
+        id: test
+        with:
+          input: ${{ matrix.input.name }}
+
+      - name: check owner
+        env:
+          ACTUAL_OWNER: ${{ steps.test.outputs.owner }}
+          EXPECTED_OWNER: ${{ matrix.input.owner }}
+        run: if [ "$ACTUAL_OWNER" != "$EXPECTED_OWNER" ]; then exit 1; fi
+
+      - name: check repo
+        env:
+          ACTUAL_REPO: ${{ steps.test.outputs.repo }}
+          EXPECTED_REPO: ${{ matrix.input.repo }}
+        run: if [ "$ACTUAL_REPO" != "$EXPECTED_REPO" ]; then exit 1; fi
+
+      - name: check rev
+        env:
+          REV: ${{ steps.test.outputs.rev }}
+        run: if [ -z "$REV" ]; then exit 1; fi
+
+      - name: check short-rev
+        env:
+          SHORT_REV: ${{ steps.test.outputs.short-rev }}
+        run: if [ -z "$SHORT_REV" ]; then exit 1; fi
+  release:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - test
+    permissions:
+      contents: write
+    steps:
+      - uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate_token
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.generate_token.outputs.token }}
+
+      - uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
+        with:
+          node-version: 16
+
+      - uses: cycjimmy/semantic-release-action@61680d0e9b02ff86f5648ade99e01be17f0260a4 # v4.0.0
+        with:
+          extra_plugins: |
+            @semantic-release/commit-analyzer
+            @semantic-release/release-notes-generator
+            @semantic-release/changelog
+            @semantic-release/github
+            @semantic-release/git
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}

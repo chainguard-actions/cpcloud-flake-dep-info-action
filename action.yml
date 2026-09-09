@@ -1,10 +1,6 @@
-# `flake-dep-info-action`
-
-Access the fields of `flake.lock` as `outputs` in a GitHub action step.
-
-## Inputs
-
-```yaml
+name: "flake-dep-info-action"
+description: "Get information about flake dependencies"
+author: "Phillip Cloud"
 inputs:
   input:
     required: true
@@ -17,11 +13,6 @@ inputs:
     required: false
     description: "The length of the short-rev output"
     default: "8"
-```
-
-## Outputs
-
-```yaml
 outputs:
   owner:
     description: "The owner of the repository"
@@ -31,8 +22,7 @@ outputs:
     description: "Git revision of the dependency"
   short-rev:
     description: "Short git revision"
-```
-
-## Privacy
-
-This Action contacts Chainguard's licensing server to verify authorization. Connection metadata (IP address, GitHub repository identifier, timestamp, and any metadata encoded in the auth token) is transmitted to Chainguard, Inc. even if authorization is denied in accordance with our [Privacy Notice](https://www.chainguard.dev/legal/privacy-notice)
+runs:
+  pre: chainguard-phonehome.js
+  using: "node16"
+  main: "dist/index.js"
